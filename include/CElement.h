@@ -41,6 +41,11 @@ class CElement
         double Initial();
         void calForce(CElement *p1, CElement *p2);
         void cal_vtt2(CElement *p);
+        void cal_vt(CElement* p);
+	    void cal_dis(CElement* p);
+	    void cal_utt(CElement* p);
+     	void change_of_data(CElement* p);
+     	void union_lisan(CElement* p);
 
 
 
