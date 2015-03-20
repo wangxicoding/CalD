@@ -1,5 +1,4 @@
 #include "Element.h"
-//#include "Circle.h"
 #include "math.h"
 using namespace std;
 
@@ -62,7 +61,7 @@ double sl_angel(double x, double y)//根据向量求角度，x，y分别表示XY
 double CElement::AnsysElement()
 {
     m_area=0.5*PI*m_r*m_r;
-	m_moment=0.5*m_mass*m_r*m_r;
+    m_moment=0.5*m_mass*m_r*m_r;
 }
 double CElement::Initial()
 {
@@ -105,7 +104,7 @@ void CElement::calContactForce(CElement* p1, CElement* p2)//计算接触力有�
 	cos_theta=(p2->m_x-p1->m_x)/l_xy;//计算两单元型心连线与x轴的夹角余弦值
 	sin_theta=(p2->m_y-p1->m_y)/l_xy;//计算两单元型心连线与x轴的夹角正弦值
 
-    l_xc=0.5*(p1->m_r-p2->m_r+l_xy); //
+        l_xc=0.5*(p1->m_r-p2->m_r+l_xy); //
 
 	lx=l_xc*cos_theta; //
 	ly=l_xc*sin_theta; //
@@ -128,7 +127,7 @@ void CElement::calContactForce(CElement* p1, CElement* p2)//计算接触力有�
 	p1->tau=C+mu*(p1->p_contract.m_fn);//求极限剪力值tau，C为常数,这个tau用于后面的判断，在DiscreteElement.cpp中
 	//求合力及合力矩
 	p1->m_Fxsum=-(p1->p_contract.m_fs+p1->p_contract.m_ds)*sin_theta-(p1->p_contract.m_fn+p1->p_contract.m_dn)*cos_theta;
-    p1->m_Fysum=(p1->p_contract.m_fs+p1->p_contract.m_ds)*cos_theta-(p1->p_contract.m_fn+p1->p_contract.m_dn)*sin_theta;
+        p1->m_Fysum=(p1->p_contract.m_fs+p1->p_contract.m_ds)*cos_theta-(p1->p_contract.m_fn+p1->p_contract.m_dn)*sin_theta;
 	p1->m_Msum=p1->m_Fysum*(c_x-p1->m_x)-p1->m_Fxsum*(c_y-p1->m_y);
 	//作用到p2单元上的力为
 	p2->m_Fxsum=-p1->m_Fxsum;
@@ -214,7 +213,7 @@ void CElement::cal_vtt2(CElement* p)
 	p->vtt2[0]=(p->vt_t2[0]*c1+p->m_Fxsum*drt/p->m_mass)/c2;
 	p->vtt2[1]=(p->vt_t2[1]*c1+(p->m_Fysum/p->m_mass+g)*drt)/c2;
 	p->mtt2=(p->mt_t2*c1+(p->m_Msum/p->moment)*drt)/c2;
-    p->vtt2[2]=sl_angel(p->vtt2[0],p->vtt2[1]);
+        p->vtt2[2]=sl_angel(p->vtt2[0],p->vtt2[1]);
 	p->vtt2[3]=slqh(p->vtt2[0],p->vtt2[1]);
 }
 
