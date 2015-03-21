@@ -231,15 +231,54 @@ double CElement::Initial()
 //}
 
 
-//void CElement::cal_vtt2(CElement* p)
-//{
-//    double c1, c2;
-//    c1=1-alpha*drt/2;
-//    c2=1+alpha*drt/2;
-//    p->vtt2[0]=(p->vt_t2[0]*c1+p->m_Fxsum*drt/p->m_mass)/c2;
-//    p->vtt2[1]=(p->vt_t2[1]*c1+(p->m_Fysum/p->m_mass+g)*drt)/c2;
-//    p->mtt2=(p->mt_t2*c1+(p->m_Msum/p->moment)*drt)/c2;
-//    p->vtt2[2]=sl_angel(p->vtt2[0],p->vtt2[1]);
-//    p->vtt2[3]=slqh(p->vtt2[0],p->vtt2[1]);
-//}
+void CElement::cal_vtt2(CElement* p)
+{
+	double c1, c2;
+	c1=1-alpha*drt/2;
+	c2=1+alpha*drt/2;
+	p->vtt2[0]=(p->vt_t2[0]*c1+p->m_Fxsum*drt/p->m_mass)/c2;
+	p->vtt2[1]=(p->vt_t2[1]*c1+(p->m_Fysum/p->m_mass+g)*drt)/c2;
+	p->mtt2=(p->mt_t2*c1+(p->m_Msum/p->moment)*drt)/c2;
+    p->vtt2[2]=sl_angel(p->vtt2[0],p->vtt2[1]);
+	p->vtt2[3]=slqh(p->vtt2[0],p->vtt2[1]);
+}
+
+void CElement::cal_vt(CElement* p)
+{
+	p->m_velx=(p->vtt2[0]+p->vt_t2[0])/2;
+	p->m_vely=(p->vtt2[1]+p->vt_t2[1])/2;
+	p->m_rotate=(p->mtt2+p->mt_t2)/2;
+}
+
+void CElement::cal_dis(CElement* p)
+{
+	p->m_disx=p->vtt2[0]*drt;
+	p->m_disy=p->vtt2[1]*drt;
+	p->m_diso=p->mtt2*drt;
+}
+
+void CElement::cal_utt(CElement* p)
+{
+	p->m_x=p->m_x+p->m_disx;
+	p->m_y=p->m_y+p->m_disy;
+	p->m_o=p->m_o+p->m_diso;
+}
+
+void CElement::change_of_data(CElement* p)
+{
+	int i;
+	for(i=0; i<4; i++)
+	{
+		p->vt_t2[i]=p->vtt2[i];
+	}
+}
+
+void CElement::union_lisan(CElement* p)
+{
+	cal_vtt2(p);
+	cal_vt(p);
+	cal_dis(p);
+	cal_utt(p);
+	change_of_data(p);
+}
 
