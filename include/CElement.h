@@ -99,8 +99,9 @@ public:
     double m_o;
 
 public:
+    CElement(int number, int coordX, int coordY);
     double AnsysElement();
-    double Initial();
+//    void Initial(int number, int coordX, int coordY);
     void calForce(CElement *p1, CElement *p2);
     void cal_vtt2();
     void cal_vt();
@@ -110,10 +111,6 @@ public:
     void union_lisan();
     void calContactForce(CElement* p2, CONTACT* cont1);
     void calCollisionForce(CElement* p2, CONTACT* cont1);
-
-
-
-
 
 };
 

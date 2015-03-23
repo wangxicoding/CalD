@@ -19,23 +19,7 @@ void unitInit()
     /** 初始化单元 **/
     for (int i = 0; i < maxn; i++)
     {
-        CElement cElement;
-
-        cElement.m_mass = CElement::m;
-        cElement.m_number = i;
-        cElement.m_moment = CElement::I;
-
-        cElement.m_velx = 0;
-        cElement.m_vely = 0;
-        cElement.m_rotate = 0;
-
-        cElement.m_r = r;
-        cElement.m_x = 0;
-        cElement.m_y = r + 2 * r * i;
-
-        cElement.m_disx = 0;
-        cElement.m_disy = 0;
-        cElement.m_diso = 0;
+        CElement cElement(i, 0, r + 2*r*i);
 
         unit.push_back(cElement);
     }

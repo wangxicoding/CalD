@@ -116,17 +116,30 @@ double CElement::AnsysElement()
     return m_area;
 }
 
-double CElement::Initial()
+CElement::CElement(int number, int coordX, int coordY)
 {
     //单元性质
-    m_number=0; //单元编号初始化
-    m_x=m_y=m_r=0.0; //单元x方向的坐标，单元y方向的坐标，单元的半径初始化
+    m_number = number; //单元编号初始化
+
+    m_x = coordX;
+    m_y = coordY;
+
+    m_r = r;
+
     m_velx=m_vely=m_rotate=0.0; //单元x，y方向的速度及单元转动速度初始化
-    vt_t2[4]=vtt2[4]=mtt2=mt_t2=0.0; //vt_t2和mt_t2分别表示t-△t/2时刻的速度和转动速度，vtt2和mtt2分别表示t+△t/2时刻的速度和转动速度初始化
-    m_mass=m_moment=0.0; //单元的质量和转动惯量初始化
+    for (int i = 0; i < 4; i++)
+    {
+        vt_t2[i] = 0; //vt_t2和mt_t2分别表示t-△t/2时刻的速度和转动速度
+        vtt2[i] = 0;
+    }
+    mtt2=mt_t2=0.0; //vtt2和mtt2分别表示t+△t/2时刻的速度和转动速度初始化
+
+    m_mass = m; //单元的质量初始化
+    m_moment = I; //转动惯量初始化
+
     m_disx=m_disy=m_diso=0.0; //分别表示单元x，y方向的位移增量及转角增量初始化
     m_disn=m_diss=0.0; //分别表示单元法向方向位移增量，切向方向位移增量初始化
-    m_ag=0.0; //地震加速度记录，从地震数据中读取初始化
+    m_ag = 0.0; //地震加速度记录，从地震数据中读取初始化
     m_Feqx=m_Feqy=0.0; //x方向和y方向地震力初始化
     m_Fxsum=m_Fysum=m_Msum=0.0; //x和y方向和合力及合力矩初始化
     //材料性质参数
@@ -135,7 +148,6 @@ double CElement::Initial()
     m_thickness=0.0;
     m_weight=0.0;
 
-    return 0;
 }
 
 
@@ -301,9 +313,9 @@ void CElement::cal_vtt2() //这个单元就是他自己，全部使用this
 
     c1=1-alpha*deltaTime/2;
     c2=1+alpha*deltaTime/2;
-    this->vtt2[0]=(this->vt_t2[0] * c1 + this->m_Fxsum * deltaTime / this->m_mass) / c2;
-    this->vtt2[1]=(this->vt_t2[1]*c1+(this->m_Fysum/this->m_mass+g)*deltaTime)/c2;
-    this->mtt2=(this->mt_t2*c1+(this->m_Msum/this->moment)*deltaTime)/c2;
+    this->vtt2[0] = (this->vt_t2[0] * c1 + this->m_Fxsum * deltaTime / this->m_mass) / c2;
+    this->vtt2[1] = (this->vt_t2[1]*c1+(this->m_Fysum/this->m_mass+g)*deltaTime)/c2;
+    this->mtt2 = (this->mt_t2*c1+(this->m_Msum/this->m_moment)*deltaTime)/c2;
     this->vtt2[2]=sl_angel(this->vtt2[0],this->vtt2[1]);
     this->vtt2[3]=slqh(this->vtt2[0],this->vtt2[1]);
 }
