@@ -9,99 +9,21 @@ using namespace std;
 
 const int maxn = 5;
 
-/**
- * 材料参数
- */
-const double fc = 14.3; //抗压强度
-const double ft = 1.43; //抗拉强度
-const double Ec = 3.0 * 1e4; //弹性模量
-const double vc = 0.2 ;//泊松比
-const double Gc = 1.2 * 1e4; //剪切模量
-const double W = 25; //重度
-const double rho = 2500; //密度
-
-/**
- * 单元参数
- */
-const double r = 0.2; //半径
-const double delta = 0.01; //厚度
-const double alpha = 0.28; //质量阻尼系数
-
-const double C = 3.18 * 1e6; //粘性系数
-const double miu = 0.6; //摩擦系数
-const double beta = 0.5; //刚强阻尼系数
-
-/**
- * 纵筋
- */
-const double zEs = 2.00 * 1e5; //弹性模量
-const double zfy = 300; //抗拉强度
-const double zfyp = 300; //抗压强度 一撇
-const double zA = 1017.876002; //钢筋界面
-
-/**
- * 箍筋
- */
-const double gEs = 2.1 * 1e5; //弹性模量
-const double gfy = 210; //抗拉强度
-const double gfyp = 210; //抗压强度 一撇
-
-double Kn;
-double Ks;
-double Cp;
-double Ft;
-double Fc;
-double m;
-double I;
-
 extern double slqh(double x, double y);
-
-/**
- * 前处理——参数计算
- */
-void init()
-{
-    /** 1 **/
-
-    /** 2 **/
-    Kn = (sqrt(3) * Ec * delta) / (3 * (1 - vc));
-    Ks = Kn * (1 - 3 * vc);
-
-
-    /** 3 **/
-
-    /** 4 **/
-    Cp = C * 2 * r * delta;
-
-    /** 5 **/
-    Ft = ft * 2 *r * delta;
-    Fc = fc * 2 *r * delta;
-
-
-    /** 6 **/
-    /** 7 **/
-    m = rho * 0.5 * M_PI * r * r * 0.01;
-
-    /** 8 **/
-    I = 0.5 * m * r * r;
-
-
-
-}
-
 
 vector<CElement> unit;
 
 void unitInit()
 {
+    int r = CElement::r;
     /** 初始化单元 **/
     for (int i = 0; i < maxn; i++)
     {
         CElement cElement;
 
-        cElement.m_mass = m;
+        cElement.m_mass = CElement::m;
         cElement.m_number = i;
-        cElement.m_moment = I;
+        cElement.m_moment = CElement::I;
 
         cElement.m_velx = 0;
         cElement.m_vely = 0;
@@ -200,7 +122,7 @@ void calculate()
 
 int main()
 {
-    init();
+    CElement::staticInit();
     unitInit();
     calculate();
     cout << "Hello world!" << endl;

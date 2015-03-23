@@ -1,10 +1,15 @@
 ﻿#include "include/CElement.h"
 #include <math.h>
 
- double beta;
- double miu;
- double deltaTime;
- double alpha;
+
+double CElement::Kn;
+double CElement::Ks;
+double CElement::Cp;
+double CElement::Ft;
+double CElement::Fc;
+double CElement::m;
+double CElement::I;
+
 
 /**
  * @brief slqh 矢量求和函数
@@ -73,6 +78,37 @@ double sl_angel(double x, double y)
     return angel;//返回向量角度，单位为弧度制
 }
 
+
+/**
+ * 前处理——参数计算
+ */
+void CElement::staticInit()
+{
+    /** 1 **/
+
+    /** 2 **/
+    Kn = (sqrt(3) * Ec * delta) / (3 * (1 - vc));
+    Ks = Kn * (1 - 3 * vc);
+
+
+    /** 3 **/
+
+    /** 4 **/
+    Cp = C * 2 * r * delta;
+
+    /** 5 **/
+    Ft = ft * 2 *r * delta;
+    Fc = fc * 2 *r * delta;
+
+
+    /** 6 **/
+    /** 7 **/
+    m = rho * 0.5 * M_PI * r * r * 0.01;
+
+    /** 8 **/
+    I = 0.5 * m * r * r;
+}
+
 double CElement::AnsysElement()
 {
     double m_area=0.5*M_PI*m_r*m_r;
@@ -98,6 +134,8 @@ double CElement::Initial()
     m_possion=0.0;
     m_thickness=0.0;
     m_weight=0.0;
+
+    return 0;
 }
 
 
@@ -109,11 +147,10 @@ double CElement::Initial()
  */
 void CElement::calContactForce(CElement* p2, CONTACT* cont1)//计算接触力有弹簧，p2单元作用到p1单元上的力，同时也储存到p2的接触力容器中，便于计算p2的接触力
 {
-   double kn;
-double ks;
+   double Kn;
+double Ks;
 double Cp;
 
-    int i; //循环变量
     double l_xy; //代表两颗粒之间绝对距离
     double l_xc; //l_xc表示接触点到p1单元圆心的距离
     double lx, ly, c_x, c_y; //
@@ -128,8 +165,8 @@ double Cp;
     //double deltaTime = 0;
     //double C = 0;
     //double mu = 0;
-    //double kn = 0;
-    //double ks = 0;
+    //double Kn = 0;
+    //double Ks = 0;
 
     sl_u[0]=(p2->m_x) - (this->m_x);
     sl_u[1]=(p2->m_y) - (this->m_y);
@@ -152,11 +189,11 @@ double Cp;
     this->m_disn = b1*cos_theta + b2*sin_theta;//计算法向方向位移增量
     this->m_diss = -b1*sin_theta + b2*cos_theta - ((this->m_r)*(this->m_diso) + (p2->m_r)*(p2->m_diso));//切向方向位移增量
     //对应第2页第5步
-    cont1->m_fn = cont1->m_fn - kn*this->m_disn;//求法向力fn
-    cont1->m_fs = cont1->m_fs + ks*this->m_diss;//求切向力fs
+    cont1->m_fn = cont1->m_fn - Kn*this->m_disn;//求法向力fn
+    cont1->m_fs = cont1->m_fs + Ks*this->m_diss;//求切向力fs
     //对应第2页第6步
-    cont1->m_dn=-beta*kn*(this->m_disn);//求法向阻尼力Dn，beta为参数，设置为0.6
-    cont1->m_ds=-beta*ks*(this->m_diss);//求切向阻尼力Ds
+    cont1->m_dn=-beta*Kn*(this->m_disn);//求法向阻尼力Dn，beta为参数，设置为0.6
+    cont1->m_ds=-beta*Ks*(this->m_diss);//求切向阻尼力Ds
     //对应第3页第7步
     this->tau=Cp+miu*(cont1->m_fn);//求极限剪力值tau，C为常数,这个tau用于后面的判断，在DiscreteElement.cpp中
 
@@ -177,8 +214,8 @@ double Cp;
 
 }
 void CElement::calCollisionForce(CElement* p2, CONTACT* cont1) //结算碰撞力，无弹簧 15963 p2 是另一个单元 cont1 是他们两个的关系 原来的p1现在是当前单元this
-{double kn;
-double ks;
+{double Kn;
+double Ks;
 double Cp;
 
     int i; //循环变量
@@ -232,10 +269,10 @@ double Cp;
             drt_n[3]=slqh(drt_n[0],drt_n[1]);//法向的位移增量
             drt_s[3]=slqh(drt_s[0],drt_s[1]);//切向位移增量值
 
-            f_n=kn*drt_n[3];//法向力增量
-            f_s=ks*drt_s[3];//切向力增量
-            d_n=-beta*kn*vn_XD[3];//法向刚度增量
-            d_s=-beta*kn*vs_XD[3];//切向刚度增量
+            f_n=Kn*drt_n[3];//法向力增量
+            f_s=Ks*drt_s[3];//切向力增量
+            d_n=-beta*Kn*vn_XD[3];//法向刚度增量
+            d_s=-beta*Ks*vs_XD[3];//切向刚度增量
 
             cont1->m_fn=cont1->m_fn+f_n+d_n;
             cont1->m_fs=cont1->m_fs+f_s+d_s;
