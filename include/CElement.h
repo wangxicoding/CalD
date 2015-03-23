@@ -65,6 +65,7 @@ private:
     static const double gfy = 210; //抗拉强度
     static const double gfyp = 210; //抗压强度 一撇
 
+    static bool IsBreak(double nowFn, double nowFs, double tau);
 public:
     static void staticInit();
 
@@ -103,15 +104,18 @@ public:
     double AnsysElement();
 //    void Initial(int number, int coordX, int coordY);
     void calForce(CElement *p1, CElement *p2);
+    void union_lisan();
+    void calContactForce(CElement* p2, CONTACT* cont1);
+    void calCollisionForce(CElement* p2, CONTACT* cont1);
+
+private:
+    void addSumF(CElement *p2, CONTACT *cont1);
     void cal_vtt2();
     void cal_vt();
     void cal_dis();
     void cal_utt();
     void change_of_data();
-    void union_lisan();
-    void calContactForce(CElement* p2, CONTACT* cont1);
-    void calCollisionForce(CElement* p2, CONTACT* cont1);
-
+    void calSumF();
 };
 
 #endif // CELEMENT_H

@@ -16,6 +16,16 @@ CONTACT::CONTACT(CElement *cElement, bool spring)
      m_M = 0;
 }
 
+/**
+ * @brief 弹簧断裂, 具体是那个弹簧断裂现在还没有加上
+ */
+void CONTACT::Break()
+{
+    m_fn = m_fs = m_dn = m_ds = 0;
+    isSpring = false; //不是弹簧,是碰撞
+    m_Fx = m_Fy = m_M = 0;
+}
+
 //
 //CONTACT::~CONTACT()
 //{

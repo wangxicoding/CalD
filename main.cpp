@@ -30,6 +30,10 @@ void unitInit()
         CONTACT contact(&unit[i + 1]);
         CONTACT contact1(&unit[i]);
 
+        /** 接触,成对的出现  ╭(●｀∀´●)╯╰(●'◡'●)╮ 好基友,一辈子 **/
+        contact.p_partner = &contact1;
+        contact1.p_partner = &contact;
+
         unit[i].contactMap.insert(pair<int, CONTACT>(i + 1, contact));
         unit[i + 1].contactMap.insert(pair<int, CONTACT>(i, contact1));
 
@@ -80,6 +84,11 @@ void calculate()
                 {
                     CONTACT contact(&unit[j], false); //添加碰撞
                     CONTACT contact1(&unit[i], false); //添加碰撞
+
+                    /** 接触,成对的出现  ╭(●｀∀´●)╯╰(●'◡'●)╮ 好基友,一辈子 **/
+                    contact.p_partner = &contact1;
+                    contact1.p_partner = &contact;
+
                     iUnit.contactMap.insert(pair<int, CONTACT>(j, contact));
                     jUnit.contactMap.insert(pair<int, CONTACT>(i, contact1));
 

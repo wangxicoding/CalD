@@ -150,6 +150,21 @@ CElement::CElement(int number, int coordX, int coordY)
 
 }
 
+bool CElement::IsBreak(double nowFn, double nowFs, double tau)
+{
+    if (nowFn > 0)
+    {
+        if (nowFn > Fc) return true;
+    }
+    else
+    {
+        if (-nowFn > Ft) return true;
+    }
+
+    if (fabs(nowFs) > tau) return true;
+
+    return false;
+}
 
 /**
  * @brief CElement::calForce 计算接触力，p2单元作用到p1单元上的力，
@@ -159,10 +174,6 @@ CElement::CElement(int number, int coordX, int coordY)
  */
 void CElement::calContactForce(CElement* p2, CONTACT* cont1)//计算接触力有弹簧，p2单元作用到p1单元上的力，同时也储存到p2的接触力容器中，便于计算p2的接触力
 {
-   double Kn;
-double Ks;
-double Cp;
-
     double l_xy; //代表两颗粒之间绝对距离
     double l_xc; //l_xc表示接触点到p1单元圆心的距离
     double lx, ly, c_x, c_y; //
@@ -209,32 +220,50 @@ double Cp;
     //对应第3页第7步
     this->tau=Cp+miu*(cont1->m_fn);//求极限剪力值tau，C为常数,这个tau用于后面的判断，在DiscreteElement.cpp中
 
+    /** 第八步 **/
+    /**  通过力判断弹簧是否断裂 **/
+    bool isBreak = IsBreak(cont1->m_fn, cont1->m_fs, this->tau);
 
+    if (isBreak) //如果断裂
+    {
+        if (l_xy > this->m_r + p2->m_r) //没有碰撞,删除接触
+        {
+            this->contactMap.erase(p2->m_number);
+            p2->contactMap.erase(this->m_number);
+        }
+        else //有碰撞, 计算碰撞力
+        {
+            cont1->Break();
+            cont1->p_partner->Break();
 
-    //求合力及合力矩
-    this->m_Fxsum = -(cont1->m_fs + cont1->m_ds)*sin_theta - (cont1->m_fn + cont1->m_dn)*cos_theta;
-    this->m_Fysum = (cont1->m_fs + cont1->m_ds)*cos_theta-(cont1->m_fn + cont1->m_dn)*sin_theta;
-    this->m_Msum = this->m_Fysum * (c_x - this->m_x) - this->m_Fxsum * (c_y - this->m_y);
-    //作用到p2单元上的力为
-    p2->m_Fxsum=-this->m_Fxsum;
-    p2->m_Fysum=-this->m_Fysum;
-    p2->m_Msum=-this->m_Msum;
-    // 15963 所有的力都放在contact里，放的地方不一致，用的时候怎么办， 这地方你看一下我这样对不对
-    cont1->m_Fx=this->m_Fxsum;
-    cont1->m_Fy=this->m_Fysum;
-    cont1->m_M=this->m_Msum;
+            // 计算碰撞力
+            calCollisionForce(p2, cont1);
 
+        }
+    }
+    else //弹簧没有断裂,按照原来步骤计算
+    {
+        //求合力及合力矩
+        cont1->m_Fx = -(cont1->m_fs + cont1->m_ds)*sin_theta - (cont1->m_fn + cont1->m_dn)*cos_theta;
+        cont1->m_Fy = (cont1->m_fs + cont1->m_ds)*cos_theta-(cont1->m_fn + cont1->m_dn)*sin_theta;
+        cont1->m_M = cont1->m_Fx * (c_x - this->m_x) - cont1->m_Fy * (c_y - this->m_y);
+
+        //好基友,一辈子,你有我也有
+        cont1->p_partner->m_Fx = cont1->m_Fx;
+        cont1->p_partner->m_Fy = cont1->m_Fy;
+        cont1->p_partner->m_M = cont1->m_M;
+
+        addSumF(p2, cont1); //给单元更新合力
+    }
 }
 void CElement::calCollisionForce(CElement* p2, CONTACT* cont1) //结算碰撞力，无弹簧 15963 p2 是另一个单元 cont1 是他们两个的关系 原来的p1现在是当前单元this
-{double Kn;
-double Ks;
-double Cp;
+{
 
     int i; //循环变量
     double l_xy; //代表两颗粒之间绝对距离
     double sl_u[3]; //定义接触力矢量数组
     double cos_theta,sin_theta; //定义两个单元的圆心连线与x轴正方向的余弦值和正弦值
-//double delta_n,delta_s; //法向位移增量，切向位移增量
+    //double delta_n,delta_s; //法向位移增量，切向位移增量
     double sumR; //两个单元半径和
     double e[2],t[2];
     double f_n, f_s, d_n, d_s;//法向力增量，切向力增量，法向刚度增量，切向刚度增量
@@ -276,36 +305,71 @@ double Cp;
             drt_n[i]=vn_XD[i]*deltaTime;//相对位移增量
             drt_s[i]=vs_XD[i]*deltaTime;//相对位移增量
         }
-            vn_XD[3]=slqh(vn_XD[0],vn_XD[1]);//法向相对速度大小
-            vs_XD[3]=slqh(vs_XD[0],vs_XD[1]);//切向相对速度大小
-            drt_n[3]=slqh(drt_n[0],drt_n[1]);//法向的位移增量
-            drt_s[3]=slqh(drt_s[0],drt_s[1]);//切向位移增量值
+        vn_XD[3]=slqh(vn_XD[0],vn_XD[1]);//法向相对速度大小
+        vs_XD[3]=slqh(vs_XD[0],vs_XD[1]);//切向相对速度大小
+        drt_n[3]=slqh(drt_n[0],drt_n[1]);//法向的位移增量
+        drt_s[3]=slqh(drt_s[0],drt_s[1]);//切向位移增量值
 
-            f_n=Kn*drt_n[3];//法向力增量
-            f_s=Ks*drt_s[3];//切向力增量
-            d_n=-beta*Kn*vn_XD[3];//法向刚度增量
-            d_s=-beta*Ks*vs_XD[3];//切向刚度增量
+        f_n=Kn*drt_n[3];//法向力增量
+        f_s=Ks*drt_s[3];//切向力增量
+        d_n=-beta*Kn*vn_XD[3];//法向刚度增量
+        d_s=-beta*Ks*vs_XD[3];//切向刚度增量
 
-            cont1->m_fn=cont1->m_fn+f_n+d_n;
-            cont1->m_fs=cont1->m_fs+f_s+d_s;
-            this->tau=(cont1->m_fn)*miu+Cp;//库伦摩擦力
+        cont1->m_fn=cont1->m_fn+f_n+d_n;
+        cont1->m_fs=cont1->m_fs+f_s+d_s;
+        this->tau=(cont1->m_fn)*miu+Cp;//库伦摩擦力
 
-            if(abs(cont1->m_fs) > abs(this->tau))
-            {
-                cont1->m_fs=abs(this->tau)*(cont1->m_fs/abs(cont1->m_fs));//方向与原摩阻力方向一致
-            }
-            else
-            {
-                delta_Fx=cont1->m_fn*e[0]+cont1->m_fs*e[1];
-                delta_Fy=cont1->m_fn*e[1]-cont1->m_fs*e[0];
-                cont1->m_Fx=cont1->m_Fx+delta_Fx;//求x方向合力，未考虑外力和重力
-                cont1->m_Fy=cont1->m_Fy+delta_Fy;//求x方向合力，未考虑外力和重力
-                cont1->m_M=cont1->m_M+cont1->m_fs*this->m_r;//求合力矩
-            }
+        if(abs(cont1->m_fs) > abs(this->tau))
+        {
+            cont1->m_fs=abs(this->tau)*(cont1->m_fs/abs(cont1->m_fs));//方向与原摩阻力方向一致
+        }
+        else
+        {
+            delta_Fx=cont1->m_fn*e[0]+cont1->m_fs*e[1];
+            delta_Fy=cont1->m_fn*e[1]-cont1->m_fs*e[0];
+            cont1->m_Fx=cont1->m_Fx+delta_Fx;//求x方向合力，未考虑外力和重力
+            cont1->m_Fy=cont1->m_Fy+delta_Fy;//求x方向合力，未考虑外力和重力
+            cont1->m_M=cont1->m_M+cont1->m_fs*this->m_r;//求合力矩
+        }
     }
+
+    //上面不太清楚你怎么算的, 就把这个放在最后面了
+    cont1->p_partner->m_Fx = cont1->m_Fx;
+    cont1->p_partner->m_Fy = cont1->m_Fy;
+    cont1->p_partner->m_M = cont1->m_M;
+
+    addSumF(p2, cont1); //给单元更新合力
+
 }
 
+/**
+ * @brief 每次计算完接触力后更新 单元合力
+ * @param p2
+ * @param cont1
+ */
+void CElement::addSumF(CElement* p2, CONTACT* cont1)
+{
+    this->m_Fxsum += cont1->m_Fx;
+    this->m_Fysum += cont1->m_Fy;
+    /** 这个公式不知道是不是这样的 =.= **/
+    this->m_Msum += cont1->m_M;
 
+    /** 这次加上,省得下次计算 **/
+    p2->m_Fxsum += cont1->m_Fx;
+    p2->m_Fysum += cont1->m_Fy;
+    p2->m_Msum += cont1->m_M;
+}
+
+/**
+ * @brief 将重力,地震力啥的加上
+ */
+void CElement::calSumF()
+{
+    /** 这个不知道是不是这样计算的 **/
+    this->m_Fxsum -= this->m_mass * this->m_ag;
+    this->m_Fysum += this->m_mass * g;
+    this->m_Msum;
+}
 
 void CElement::cal_vtt2() //这个单元就是他自己，全部使用this
 {
@@ -353,6 +417,7 @@ void CElement::change_of_data()
 
 void CElement::union_lisan()
 {
+    calSumF();
     cal_vtt2();
     cal_vt();
     cal_dis();
