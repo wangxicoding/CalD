@@ -31,11 +31,15 @@ void unitInit()
         CONTACT contact1(&unit[i]);
 
         /** 接触,成对的出现  ╭(●｀∀´●)╯╰(●'◡'●)╮ 好基友,一辈子 **/
-        contact.p_partner = &contact1;
-        contact1.p_partner = &contact;
+//        contact.p_partner = &contact1;
+//        contact1.p_partner = &contact;
 
         unit[i].contactMap.insert(pair<int, CONTACT>(i + 1, contact));
         unit[i + 1].contactMap.insert(pair<int, CONTACT>(i, contact1));
+
+        // 因为c++构造函数的问题, 上面那个会出现指针错误
+        (unit[i].contactMap[i + 1]).p_partner = &(unit[i + 1].contactMap[i]);
+        (unit[i + 1].contactMap[i]).p_partner = &(unit[i].contactMap[i + 1]);
 
         cout<< unit[i].m_mass <<endl;
 
@@ -90,11 +94,16 @@ void calculate()
                     CONTACT contact1(&unit[i], false); //添加碰撞
 
                     /** 接触,成对的出现  ╭(●｀∀´●)╯╰(●'◡'●)╮ 好基友,一辈子 **/
-                    contact.p_partner = &contact1;
-                    contact1.p_partner = &contact;
+//                    contact.p_partner = &contact1;
+//                    contact1.p_partner = &contact;
 
                     iUnit.contactMap.insert(pair<int, CONTACT>(j, contact));
                     jUnit.contactMap.insert(pair<int, CONTACT>(i, contact1));
+
+                    // 因为c++构造函数的问题, 上面那个会出现指针错误
+                    iUnit.contactMap[j].p_partner = &(jUnit.contactMap[i]);
+                    jUnit.contactMap[i].p_partner = &(iUnit.contactMap[j]);
+
 
                     //计算碰撞力
                     iUnit.calCollisionForce(&jUnit, &contact);

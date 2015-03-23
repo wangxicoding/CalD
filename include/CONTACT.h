@@ -22,7 +22,7 @@ class CONTACT
         double m_Fx;
         double m_Fy;
         double m_M;
-
+        CONTACT(){};
         CONTACT(CElement *cElement, bool spring = true); //不设定spring则默认为弹簧
         void Break();
 
