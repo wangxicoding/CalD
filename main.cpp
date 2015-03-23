@@ -127,9 +127,17 @@ void calculate()
 
 int main()
 {
+    int maxStep = 1e2; /**总步长,每一步长相当于每一时间间隔
+                         *如果deltaTime = 1e-6,步长为 1e6
+                         *那总时间为1s.
+                         */
+
     CElement::staticInit();
     unitInit();
-    calculate();
+    for (int i = 0; i < maxStep; i++) //计算相应步长的单元离散过程
+    {
+        calculate();
+    }
     cout << "Hello world!" << endl;
     return 0;
 }
