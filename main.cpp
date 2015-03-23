@@ -71,10 +71,14 @@ void calculate()
                     {
                         iUnit.contactMap.erase(itMap);
                         jUnit.contactMap.erase(i);
+
+                        continue; //跳过
                     }
                     else //是弹簧,拉力
                     {
-                        //计算
+                        //计算弹簧力
+                        iUnit.calContactForce(&jUnit, &contact);
+
                     }
                 } //end else
             } //end if
@@ -93,6 +97,7 @@ void calculate()
                     jUnit.contactMap.insert(pair<int, CONTACT>(i, contact1));
 
                     //计算碰撞力
+                    iUnit.calCollisionForce(&jUnit, &contact);
 
                 }
                 else //有弹簧或者碰撞
@@ -101,15 +106,22 @@ void calculate()
                     if (contact.isSpring == false) //不是弹簧,是碰撞
                     {
                         //计算碰撞力
+                        iUnit.calCollisionForce(&jUnit, &contact);
                     }
                     else //是弹簧
                     {
-                        //计算
+                        //计算弹簧力
+                        iUnit.calContactForce(&jUnit, &contact);
                     }
                 } //end else
             } //end else
 
         } //end for j
+
+        // 计算完与所有单元接触的力
+        /** 十二步以后的事儿 **/
+        iUnit.union_lisan();
+
     } //end for i
 }
 
