@@ -10,7 +10,7 @@ class CONTACT;
 
 class CElement
 {
-public:
+private:
     static double Kn;
     static double Ks;
     static double Cp;
@@ -70,18 +70,15 @@ public:
     static void staticInit();
 
 
-public:
+private:
     //        CElement();
     //        virtual ~CElement();
-    double m_mass; //单元的质量
     int m_number; //单元的编号
     double m_moment; //单元的转动惯量
     double m_velx, m_vely, m_rotate; //x、y平动速度, 单元转动速度
-    double m_x, m_y, m_r; //圆心x坐标, y坐标, 半径
     bool m_restx, m_resty, m_resto; //x、y、转动方向是否受约束
     double m_loadx, m_loady, m_loado; //x、y所受合力, 单元所受合力矩
     double m_disx, m_disy, m_diso; //x、y、转角方向的位移增量
-    std::map<int, CONTACT> contactMap; //接触
 
     double vt_t2[4], vtt2[4], mtt2, mt_t2; //vt_t2和mt_t2分别表示t-△t/2时刻的速度和转动速度，vtt2和mtt2分别表示t+△t/2时刻的速度和转动速度
     double m_disn, m_diss; //分别表示单元法向方向位移增量，切向方向位移增量
@@ -98,6 +95,13 @@ public:
 
     double moment;
     double m_o;
+
+public:
+    double m_mass; //单元的质量
+    double m_x, m_y, m_r; //圆心x坐标, y坐标, 半径
+    std::map<int, CONTACT> contactMap; //接触
+
+
 
 public:
     CElement(int number, int coordX, int coordY);
