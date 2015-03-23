@@ -54,6 +54,7 @@ double Fc;
 double m;
 double I;
 
+extern double slqh(double x, double y);
 
 /**
  * 前处理——参数计算
@@ -118,30 +119,13 @@ void unitInit()
     }
 
     /** 初始化接触对象 **/
-    for (int i = 0; i < maxn; i++)
+    for (int i = 0; i < maxn -1; i++)
     {
-        CONTACT contact;
-        CONTACT contact1;
+        CONTACT contact(&unit[i + 1]);
+        CONTACT contact1(&unit[i]);
 
-        if( i != 0)
-        {
-            contact.p_element = &unit[i - 1];
-            contact.m_fn = 0;
-            contact.m_fs = 0;
-            contact.fenli = false;
-            contact.fencon = false;
-            unit[i].contactList.push_back(contact);
-        }
-
-        if( i != maxn - 1 )
-        {
-            contact1.p_element = &unit[i + 1];
-            contact1.m_fn = 0;
-            contact1.m_fs = 0;
-            contact1.fenli = false;
-            contact1.fencon = false;
-            unit[i].contactList.push_back(contact1);
-        }
+        unit[i].contactMap.insert(pair<int, CONTACT>(i + 1, contact));
+        unit[i + 1].contactMap.insert(pair<int, CONTACT>(i, contact1));
 
         cout<< unit[i].m_mass <<endl;
 
@@ -149,138 +133,69 @@ void unitInit()
 
 }
 
-double dis(double ui, double vi, double uj, double vj)
-{
-    double ans = (ui - uj) * (ui - uj) + (vi - vj) * (vi - vj);
-    return sqrt(ans);
-}
-
 void calculate()
 {
     for (int i = 0; i < maxn; i++)
     {
-        CElement *iUnit = &unit[i];
-        CElement *jUnit;
-
-        list<CONTACT>::iterator spring; //连接的弹簧
-        for (spring = iUnit->contactList.begin(); spring != iUnit->contactList.end(); ++spring)
+        CElement &iUnit = unit[i];
+        for (int j = i + 1; j < maxn; j++)
         {
-            jUnit = spring->p_element;
+            CElement &jUnit = unit[j];
+            map<int, CONTACT>::iterator itMap;
 
-            /** 第二步 **/
-            if (spring->fenli | spring->fencon) //如果有一个被破坏了
+            itMap = iUnit.contactMap.find(j);
+
+            double D;
+            D = slqh(iUnit.m_x - jUnit.m_x, iUnit.m_y - jUnit.m_y);
+
+            if (D > iUnit.m_r + jUnit.m_r) //如果大于
             {
-                /**
-                *跳到 第D步
-                */
-                continue;
-            }
-            else;
-
-            /** 第三步 **/
-            double ui,vi,uj,vj;
-
-            ui = iUnit->m_x;
-            vi = iUnit->m_y;
-
-            uj = jUnit->m_x;
-            vj = jUnit->m_y;
-
-            double D, cosTheta, sinTheta;
-
-            D = dis(ui, vi, uj, vj);
-            cosTheta = (uj - ui) / D;
-            sinTheta = sqrt(1 - cosTheta * cosTheta);
-
-            /** 第四步 **/
-            double deltaUi, deltaVi, deltaPi, deltaUj, deltaVj, deltaPj;
-            double deltaUn, deltaUs;
-            double ri, rj;
-
-            ri = iUnit->m_r;
-            rj = jUnit->m_r;
-
-            deltaUi = iUnit->m_disx, deltaVi = iUnit->m_disy, deltaPi = iUnit->m_diso;
-            deltaUj = jUnit->m_disx, deltaVj = jUnit->m_disy, deltaPj = jUnit->m_diso;
-
-            deltaUn = (deltaUj - deltaUi) * cosTheta + (deltaVj - deltaVi) * sinTheta;
-            deltaUs = -(deltaUj - deltaUi) * sinTheta + (deltaVj - deltaVi) * cosTheta - (ri * deltaPi + rj * deltaPj);
-
-            /** 第五步 **/
-            double fnc0, fsc0;
-            double fnc, fsc;
-
-
-            fnc0 = spring->m_fn, fsc0 = spring->m_fs;
-
-            fnc = fnc0 - Kn * deltaUn;
-            fsc = fsc0 + Ks * deltaUs;
-
-            /** 第六步 **/
-            double Dn, Ds;
-
-            Dn = -beta * Kn * deltaUn;
-            Ds = -beta * Ks * deltaUs;
-
-            /** 第七步 **/
-            double tao;
-
-            tao = Cp + miu * fnc;
-
-            /** 第八步 **/
-            if (fnc > 0)
-            {
-                if (fnc > Fc)
+                if (itMap == iUnit.contactMap.end()) //没弹簧、没有碰撞
                 {
-                    /**弹簧断裂,进入阶段2**/
+                    continue; //跳过
                 }
-                else
+                else // 有弹簧或者碰撞
                 {
-                    /**弹簧未断裂,仍是阶段1**/
-                }
-
-            }
-            else
+                    CONTACT &contact = itMap->second;
+                    if (contact.isSpring == false) //不是弹簧,是碰撞,删除contact
+                    {
+                        iUnit.contactMap.erase(itMap);
+                        jUnit.contactMap.erase(i);
+                    }
+                    else //是弹簧,拉力
+                    {
+                        //计算
+                    }
+                } //end else
+            } //end if
+            else //如果小于, 那一定会有力
             {
-                if (-fnc > Ft)
+                if (itMap == iUnit.contactMap.end()) //没弹簧、没碰撞, 那么添加碰撞
                 {
-                    /**弹簧断裂,进入阶段2**/
+                    CONTACT contact(&unit[j], false); //添加碰撞
+                    CONTACT contact1(&unit[i], false); //添加碰撞
+                    iUnit.contactMap.insert(pair<int, CONTACT>(j, contact));
+                    jUnit.contactMap.insert(pair<int, CONTACT>(i, contact1));
+
+                    //计算碰撞力
+
                 }
-                else
+                else //有弹簧或者碰撞
                 {
-                    /**弹簧未断裂,仍是阶段1**/
-                }
-            }
+                    CONTACT &contact = itMap->second;
+                    if (contact.isSpring == false) //不是弹簧,是碰撞
+                    {
+                        //计算碰撞力
+                    }
+                    else //是弹簧
+                    {
+                        //计算
+                    }
+                } //end else
+            } //end else
 
-            if (fsc > tao)
-            {
-                /**弹簧断裂,进入阶段2,切向力 u*fnc **/
-            }
-            else
-            {
-                /**弹簧未断裂,仍是阶段1**/
-            }
-
-/******* 阶段1: ********/
-
-            /** 第九步 **/
-            double Fx, Fy;
-
-            Fx = -(fsc + Ds) * sinTheta - (fnc + Dn) * cosTheta;
-            Fy = (fsc + Ds) * cosTheta - (fnc + Dn) * sinTheta;
-
-            /** 第十步 **/
-            double Fxload, ag;
-            ag = 0;  //这里到时候读取文件
-            Fxload = -m * ag;
-
-            /** 第十一步 **/
-
-
-
-
-        }
-    }
+        } //end for j
+    } //end for i
 }
 
 int main()
