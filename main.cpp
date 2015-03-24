@@ -128,6 +128,8 @@ void calculate()
         } //end for j
 
         // 计算完与所有单元接触的力
+        // 在计算十二步之前，把单元i所受的力求和，包括重力和地震力，下面调用calSumF()函数
+        calSumF()；
         /** 十二步以后的事儿 **/
         iUnit.union_lisan();
 
