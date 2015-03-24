@@ -183,14 +183,6 @@ void CElement::calContactForce(CElement* p2, CONTACT* cont1)//计算接触力有
     double delta_n,delta_s; //法向位移增量，切向位移增量
     double b1, b2;//法向力增量，切向力增量，法向刚度增量，切向刚度增量
 
-    // 15963 下面几个我定义的
-    //double beta = 0;
-    //double deltaTime = 0;
-    //double C = 0;
-    //double mu = 0;
-    //double Kn = 0;
-    //double Ks = 0;
-
     sl_u[0]=(p2->m_x) - (this->m_x);
     sl_u[1]=(p2->m_y) - (this->m_y);
 
@@ -259,15 +251,14 @@ void CElement::calContactForce(CElement* p2, CONTACT* cont1)//计算接触力有
 void CElement::calCollisionForce(CElement* p2, CONTACT* cont1) //结算碰撞力，无弹簧 15963 p2 是另一个单元 cont1 是他们两个的关系 原来的p1现在是当前单元this
 {
 
-    int i; //循环变量
     double l_xy; //代表两颗粒之间绝对距离
-    double sl_u[3]; //定义接触力矢量数组
-    double cos_theta,sin_theta; //定义两个单元的圆心连线与x轴正方向的余弦值和正弦值
-    //double delta_n,delta_s; //法向位移增量，切向位移增量
-    double sumR; //两个单元半径和
-    double e[2],t[2];
-    double f_n, f_s, d_n, d_s;//法向力增量，切向力增量，法向刚度增量，切向刚度增量
-    double delta_Fx, delta_Fy;
+	double sl_u[2]; //定义接触力矢量数组
+	double cos_theta,sin_theta; //定义两个单元的圆心连线与x轴正方向的余弦值和正弦值
+    double delta_n,delta_s; //法向位移增量，切向位移增量
+	double sumR; //两个单元半径和
+	double e[2],t[2]; //单元矢量
+	double b1, b2, c1, c2; //临时变量
+	double deltaFn, deltaFs, v_n, v_s;//法向力增量，切向力增量，法向刚度增量，切向刚度增量
 
     sumR = this->m_r + p2->m_r; //求两个单元半径和
 
@@ -285,55 +276,51 @@ void CElement::calCollisionForce(CElement* p2, CONTACT* cont1) //结算碰撞力
     }
     else
     {
-        e[0]=((p2->m_x)-(this->m_x))/l_xy; //cos_theta
-        e[1]=((p2->m_y)-(this->m_y))/l_xy; //sin_theta
-        t[0]=e[1]; //sin_theta
-        t[1]=-e[0]; //-cos_theta
-        // 15963 下面几个我定义的
-        double vn_XD[10];
-        double vs_XD[10];
-        double drt_n[10];
-        double drt_s[10];
+        e[0]=cos_theta; //
+		e[1]=sin_theta; //
+		t[0]=e[1]; //sin_theta
+		t[1]=-e[0]; //-cos_theta
+		
+		b1 = (this->m_velx)-(p2->m_velx);//单元相对速度x方向分量
+        b2 = (this->m_vely)-(p2->m_vely);//单元相对速度y方向分量
+		v_n = b1*e[0]+b2*e[1];
+		v_s = b1*t[0]+b2*t[1]-(this->m_rotate*this->m_r+p2->m_rotate*p2->m_r);//相对速度
+		
+		delta_n = v_n*delta;//相对位移增量
+		delta_s = v_s*delta;//相对位移增量
+	    
+        deltaFn = delta_n*Kn;
+		deltaFs = delta_s*Ks;
 
+		cont1->m_fn=cont1->m_fn+deltaFn;
+		cont1->m_fs=cont1->m_fs+deltaFs;
+		cont1->m_dn=beta*Kn*v_n;
+		cont1->m_ds=beta*Ks*v_s;
 
-        for(i=0;i<2;i++)
-        {
-            vn_XD[0]=((this->m_velx)-(p2->m_velx))*e[0];//单元相对速度x方向分量
-            vn_XD[1]=((this->m_vely)-(p2->m_vely))*e[1];//单元相对速度y方向分量
-            vs_XD[0]=(((this->m_velx)-(p2->m_velx))*t[0])-(this->m_rotate*this->m_r+p2->m_rotate*p2->m_r);//相对速度
-            vs_XD[1]=(((this->m_vely)-(p2->m_vely))*t[1])-(this->m_rotate*this->m_r+p2->m_rotate*p2->m_r);//相对速度
-            drt_n[i]=vn_XD[i]*deltaTime;//相对位移增量
-            drt_s[i]=vs_XD[i]*deltaTime;//相对位移增量
-        }
-        vn_XD[3]=slqh(vn_XD[0],vn_XD[1]);//法向相对速度大小
-        vs_XD[3]=slqh(vs_XD[0],vs_XD[1]);//切向相对速度大小
-        drt_n[3]=slqh(drt_n[0],drt_n[1]);//法向的位移增量
-        drt_s[3]=slqh(drt_s[0],drt_s[1]);//切向位移增量值
-
-        f_n=Kn*drt_n[3];//法向力增量
-        f_s=Ks*drt_s[3];//切向力增量
-        d_n=-beta*Kn*vn_XD[3];//法向刚度增量
-        d_s=-beta*Ks*vs_XD[3];//切向刚度增量
-
-        cont1->m_fn=cont1->m_fn+f_n+d_n;
-        cont1->m_fs=cont1->m_fs+f_s+d_s;
-        this->tau=(cont1->m_fn)*miu+Cp;//库伦摩擦力
-
-        if(abs(cont1->m_fs) > abs(this->tau))
-        {
-            cont1->m_fs=abs(this->tau)*(cont1->m_fs/abs(cont1->m_fs));//方向与原摩阻力方向一致
-        }
-        else
-        {
-            delta_Fx=cont1->m_fn*e[0]+cont1->m_fs*e[1];
-            delta_Fy=cont1->m_fn*e[1]-cont1->m_fs*e[0];
-            cont1->m_Fx=cont1->m_Fx+delta_Fx;//求x方向合力，未考虑外力和重力
-            cont1->m_Fy=cont1->m_Fy+delta_Fy;//求x方向合力，未考虑外力和重力
-            cont1->m_M=cont1->m_M+cont1->m_fs*this->m_r;//求合力矩
-        }
+        if(cont1->m_fn<0)
+		{
+			cont1->m_fn=0;
+		    cont1->m_fs=0;
+		    cont1->m_dn=0;
+		    cont1->m_ds=0;
+		}
+		else
+		{
+			this->tau=(cont1->m_fn)*miu+Cp;
+			if(abs(cont1->m_fs)>abs(this->tau))
+			{
+				cont1->m_fs=abs(this->tau)*(cont1->m_fs/abs(cont1->m_fs));//方向与原摩阻力方向一致
+				cont1->m_ds=0;
+			}
+		}
+		c1 = cont1->m_fs+cont1->m_ds;
+		c2 = cont1->m_fn+cont1->m_dn;
+	    cont1->m_Fx = -c1*sin_theta-c2*cos_theta; //计算x方向合力
+		cont1->m_Fy = c1*cos_theta-c2*sin_theta; //计算y方向合力
+		cont1->m_M = c1*(this->m_r);	//计算合力矩
     }
 
-    //上面不太清楚你怎么算的, 就把这个放在最后面了
+    //上面我按照你的样式重新修改了, 就先按照这个算吧
     cont1->p_partner->m_Fx = cont1->m_Fx;
     cont1->p_partner->m_Fy = cont1->m_Fy;
     cont1->p_partner->m_M = cont1->m_M;
@@ -351,7 +338,7 @@ void CElement::addSumF(CElement* p2, CONTACT* cont1)
 {
     this->m_Fxsum += cont1->m_Fx;
     this->m_Fysum += cont1->m_Fy;
-    /** 这个公式不知道是不是这样的 =.= **/
+    /** 这个公式是这样的 =.= **/
     this->m_Msum += cont1->m_M;
 
     /** 这次加上,省得下次计算 **/
@@ -365,7 +352,7 @@ void CElement::addSumF(CElement* p2, CONTACT* cont1)
  */
 void CElement::calSumF()
 {
-    /** 这个不知道是不是这样计算的 **/
+    /** 这个是这样计算的 **/
     this->m_Fxsum -= this->m_mass * this->m_ag;
     this->m_Fysum += this->m_mass * g;
     this->m_Msum;
